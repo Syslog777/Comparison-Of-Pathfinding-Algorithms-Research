@@ -1,0 +1,96 @@
+--[[
+	By ScriptreMooCow (Talib Muhammad)
+	Theoretically, a ray extends infinitely in one direction.
+	However, the max length of the direction vector on Roblox is 5000 studs
+	The length of the direction vector is important - parts further
+ 	away than its length will not be tested
+	If the ray does not intersect a part, the return values will be nil
+	and the point at the end of the ray, respectively
+
+	The OPEN set contains those nodes that are candidates for examining.
+	Initially, the OPEN set contains only one element: the starting position.
+	The CLOSED set contains those nodes that have already been examined.
+	Initially, the CLOSED set is empty. Graphically, the OPEN set is the
+	“frontier” and the CLOSED set is the “interior” of the visited areas.
+	Each node also keeps a pointer to its parent node so that we can
+	determine how it was found.
+	
+	Raycasting: from the start, a ray will be cast in the direction of Destination,
+	then to the left and to the right from the Start. A node will be placed 
+
+	Algorithm starts by taking in a dummy and getting its position.
+	Then it gets the directional vector. After that it casts three
+	rays out. It then uses these rays to get the wall positions that 
+	the dummy can see. Then it places a node -NodeDiameterInStuds
+	to the left or right, whatever direction it was. 
+	
+	h_cost: the estimated distance from node n to the goal node
+	g_cost: the distance from the start node to n.
+	f_cost: g_cost + h_cost
+	OpenSet.exit_node: the goal
+	OpenSet.start_node: the starting point
+	--]]
+local NodeModule = require(script.node_module)
+NodeModule:GetOpenSet().start_node = NodeModule.new()
+local start_node = NodeModule:GetOpenSet().start_node
+function ValidNode(node)
+	node:EnableBolts()
+end
+function InvalidNode(node)
+	node:DisableBolts()
+end
+--[[	there are three modes of this function:
+		exiting, when the algorithm finds the last node
+		traveling, when the algorithm is searching
+		backtracking, when the algorithm is terminating until it reaches
+	 	a previous node it searched that still has neighbors in the open set
+--]]
+function AStar(node)
+	--[[EXIT CONDITIONS]]
+	if not node then return nil end -- this node does not exist
+	if node == NodeModule.GetOpenSet().exit_node then -- exit case: this means that a node.best_node == exit_node
+		return true
+	end
+	while NodeModule.GetOpenSet().exit_node:IsInOpenSet() do
+		node:RemoveFromOpenSet()
+		node:FindBestNeighbor()
+		if not node.best_node then
+			return nil 
+		end
+		node.best_node:RemoveFromOpenSet()
+		local path_found = AStar(node.best_node) --might be nil or not lead to exit_node, or it may
+		if path_found then
+			ValidNode(node)
+			ValidNode(node.best_node)
+			return true
+		end
+	end
+end	
+local numb_of_waypoints = 0
+--[[function Move(start)
+	if not start.best_node then return end
+	numb_of_waypoints = numb_of_waypoints + 1
+	print("moving to "..tostring(start))
+	local node = start
+	game.Workspace.Dummy:MoveTo(node.best_node.part.Position, node.best_node.part)
+	wait(0.1)
+	Move(node.best_node)
+end]]--
+function Move()
+	while start_node.best_node do
+		numb_of_waypoints = numb_of_waypoints + 1
+		print("moving to "..tostring(start_node))
+		game.Workspace.Dummy:MoveTo(start_node.best_node.part.Position, start_node.best_node.part)
+		start_node = start_node.best_node
+		wait(0.2)
+	end
+end
+start_node.part.Position = game.Workspace.Dummy.Head.Position
+start_node:PropagateNodes()
+for key, node in pairs(NodeModule:GetOpenSet()) do
+	node:CalculateNodeCosts()
+end
+AStar(start_node)
+game.ReplicatedStorage.RemoteEvent:FireAllClients()
+Move()
+print("Number of waypoints was.."..tostring(numb_of_waypoints))
