@@ -1,5 +1,5 @@
 --[[
-	By ScriptreMooCow (Talib Muhammad)
+	By ScriptreMooCow ()
 	Theoretically, a ray extends infinitely in one direction.
 	However, the max length of the direction vector on Roblox is 5000 studs
 	The length of the direction vector is important - parts further
